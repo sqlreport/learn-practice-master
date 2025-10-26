@@ -35,10 +35,13 @@ MANIFEST
 .env.production
 
 # IDEs
-.vscode/
 .idea/
 *.swp
 *.swo
+
+# VS Code (keep settings for consistency but ignore user-specific files)
+.vscode/settings.json.local
+.vscode/launch.json.local
 
 # OS
 .DS_Store
@@ -163,3 +166,7 @@ config/production.py
 !*.secret
 .env.production
 .env.development
+
+# Codespace specific
+.devcontainer/.env
+.devcontainer/docker-compose.override.yml

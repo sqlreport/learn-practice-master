@@ -1,0 +1,56 @@
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: myapp_db
+      POSTGRES_USER: myapp_user
+      POSTGRES_PASSWORD: myapp_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgresql/init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myapp_user -d myapp_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend Development
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.dev
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./backend:/app/backend
+      - ./:/workspace
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - DATABASE_URL=postgresql://myapp_user:myapp_password@db:5432/myapp_db
+      - SECRET_KEY=dev-secret-key-local
+      - JWT_SECRET_KEY=dev-jwt-secret-key-local
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python run.py
+
+  # Frontend Development
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:5000/api
+    command: npm run dev
+
+volumes:
+  postgres_data:

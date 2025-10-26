@@ -2,7 +2,9 @@ import os
 from dotenv import load_dotenv
 
 basedir = os.path.abspath(os.path.dirname(__file__))
-load_dotenv(os.path.join(basedir, '.env'))
+# Load .env from project root, not from app directory
+project_root = os.path.dirname(os.path.dirname(basedir))
+load_dotenv(os.path.join(project_root, '.env'))
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'

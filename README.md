@@ -2,6 +2,50 @@
 
 A modern full-stack application built with React TypeScript frontend, Flask backend, PostgreSQL database, all containerized in a single Docker image with nginx.
 
+## 🚀 Quick Start Options
+
+### Option 1: GitHub Codespaces (Recommended)
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/your-username/your-repo-name)
+
+**Fastest way to get started! No local setup required.**
+
+1. Click the Codespaces badge above or go to your repository
+2. Click "Code" → "Codespaces" → "Create codespace on main"
+3. Wait for automatic setup (3-5 minutes)
+4. Run `./start-dev.sh` to start development servers
+
+📖 **[Complete Codespace Guide](CODESPACE_GUIDE.md)**
+
+### Option 2: Local Development
+
+#### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for local frontend development)
+- Python 3.9+ (for local backend development)
+
+#### Quick Local Setup
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd learn-practice-master
+```
+
+2. Start with Docker Compose:
+```bash
+# Development environment
+docker-compose -f docker-compose.local.yml up -d
+
+# Or production environment
+docker-compose up -d --build
+```
+
+3. Access the application:
+   - Frontend: http://localhost:3000 (development)
+   - Backend: http://localhost:5000 (development)
+   - Production: http://localhost (production)
+
 ## Features
 
 - **Frontend**: React 18 with TypeScript, Vite build tool, Tailwind CSS
@@ -10,6 +54,7 @@ A modern full-stack application built with React TypeScript frontend, Flask back
 - **Containerization**: Single Docker image containing all components
 - **Web Server**: Nginx for serving static files and reverse proxy
 - **Development**: Hot reloading, separate development containers
+- **Cloud Development**: Full GitHub Codespaces support with pre-configured environment
 
 ## Quick Start
 
@@ -266,6 +311,9 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Support
 
 For support and questions:
-- Create an issue in the repository
-- Check the troubleshooting section
-- Review the comprehensive development guide in `react-flask-docker-development-guide.md`
+- 🚀 **[Codespace Guide](CODESPACE_GUIDE.md)** - Complete Codespace setup and usage
+- 🔧 **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Solutions for common issues
+- 📋 **Run `./test-setup.sh`** - Automated environment testing
+- 🐛 Create an issue in the repository
+- 💬 Contact the development team
+- 📖 Review the comprehensive development guide in `react-flask-docker-development-guide.md`

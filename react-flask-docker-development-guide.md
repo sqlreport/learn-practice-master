@@ -8,15 +8,16 @@ A comprehensive guide for developing a full-stack application using React TypeSc
 2. [Prerequisites](#prerequisites)
 3. [Prerequisite Setup](#prerequisite-setup)
 4. [Project Structure](#project-structure)
-5. [Frontend Development (React TypeScript + Vite)](#frontend-development)
-6. [Backend Development (Flask)](#backend-development)
-7. [Database Setup (PostgreSQL)](#database-setup)
-8. [Docker Configuration](#docker-configuration)
-9. [Nginx Configuration](#nginx-configuration)
-10. [Development Workflow](#development-workflow)
-11. [Production Deployment](#production-deployment)
-12. [Testing Strategy](#testing-strategy)
-13. [Troubleshooting](#troubleshooting)
+5. [Secret Management](#secret-management)
+6. [Frontend Development (React TypeScript + Vite)](#frontend-development)
+7. [Backend Development (Flask)](#backend-development)
+8. [Database Setup (PostgreSQL)](#database-setup)
+9. [Docker Configuration](#docker-configuration)
+10. [Nginx Configuration](#nginx-configuration)
+11. [Development Workflow](#development-workflow)
+12. [Production Deployment](#production-deployment)
+13. [Testing Strategy](#testing-strategy)
+14. [Troubleshooting](#troubleshooting)
 
 ## Project Overview
 
@@ -170,6 +171,254 @@ project-root/
 └── react-flask-docker-development-guide.md
 ```
 
+## Secret Management
+
+This project uses [git-secret](https://git-secret.io/) to securely manage sensitive configuration data like database passwords, API keys, and other secrets. This ensures that sensitive data is never stored in plain text in your repository.
+
+### 🔐 Overview
+
+All sensitive configuration is encrypted using GPG keys and stored as `.secret` files in the repository. The actual environment files (`.env.production`, `.env.development`) are generated only when needed and are automatically excluded from git commits.
+
+### 🚀 Quick Start
+
+#### Using the Management Script
+
+We provide a convenient script to manage all secret operations:
+
+```bash
+# Show all available commands
+./scripts/secrets-manage.sh help
+
+# Decrypt secret files (for development/deployment)
+./scripts/secrets-manage.sh reveal
+
+# Encrypt secret files (before committing changes)
+./scripts/secrets-manage.sh hide
+
+# Load development environment
+./scripts/secrets-manage.sh load-dev
+
+# Load production environment  
+./scripts/secrets-manage.sh load-prod
+
+# Edit encrypted files safely
+./scripts/secrets-manage.sh edit .env.production
+
+# Check git-secret status
+./scripts/secrets-manage.sh status
+```
+
+#### Using the Development Workflow Script
+
+For even easier development, use the integrated workflow script:
+
+```bash
+# Set up and start development environment (handles secrets automatically)
+./dev-workflow.sh setup-dev
+./dev-workflow.sh start-dev
+
+# Set up production environment (prompts for secret updates)
+./dev-workflow.sh setup-prod
+./dev-workflow.sh start-prod
+
+# Clean up (removes decrypted files and containers)
+./dev-workflow.sh clean
+```
+
+### 📁 Secret Files
+
+The following files contain sensitive data and are encrypted:
+
+- `.env.production.secret` - Encrypted production environment variables
+- `.env.development.secret` - Encrypted development environment variables
+
+When decrypted, these become:
+- `.env.production` - Production secrets (excluded from git)
+- `.env.development` - Development secrets (excluded from git)
+
+### 🔧 Manual Git-Secret Commands
+
+If you prefer using git-secret directly:
+
+```bash
+# Decrypt all secrets
+git secret reveal
+
+# Encrypt all secrets
+git secret hide
+
+# Add new files to encryption
+git secret add .env.staging
+
+# List encrypted files
+git secret list
+
+# Show who can decrypt secrets
+git secret whoknows
+
+# Check if files need re-encryption
+git secret changes
+```
+
+### 🛡️ Security Best Practices
+
+1. **Never commit decrypted `.env.*` files** - they're automatically excluded by `.gitignore`
+2. **Always encrypt before committing**: `./scripts/secrets-manage.sh hide`
+3. **Use strong, unique passwords for production**
+4. **Rotate secrets regularly**
+5. **Keep your GPG key secure and backed up**
+6. **Review production secrets before deployment**
+
+### 🔑 Team Setup
+
+#### For New Team Members:
+
+1. **Install git-secret**:
+   ```bash
+   sudo apt install git-secret  # Ubuntu/Debian
+   brew install git-secret      # macOS
+   ```
+
+2. **Generate GPG key** (if you don't have one):
+   ```bash
+   gpg --full-generate-key
+   # Follow prompts, use your real email address
+   ```
+
+3. **Send your public key to admin**:
+   ```bash
+   gpg --armor --export your-email@example.com > your-public-key.asc
+   # Send this file to the project administrator
+   ```
+
+4. **Admin adds you to secrets**:
+   ```bash
+   gpg --import team-member-public-key.asc
+   git secret tell team-member@example.com
+   git secret hide
+   git add .gitsecret/keys/pubring.kbx
+   git commit -m "Add team member to secrets"
+   git push
+   ```
+
+5. **You can now decrypt secrets**:
+   ```bash
+   git pull
+   ./scripts/secrets-manage.sh reveal
+   ```
+
+### 🔧 Environment Variables Reference
+
+#### Database Configuration
+- `DATABASE_URL` - Complete PostgreSQL connection string
+- `POSTGRES_PASSWORD` - Database user password
+
+#### Flask Security
+- `SECRET_KEY` - Flask session encryption key (use long random string)
+- `JWT_SECRET_KEY` - JWT token signing key (use long random string)
+
+#### Admin Tools
+- `PGADMIN_DEFAULT_EMAIL` - pgAdmin web interface login email
+- `PGADMIN_DEFAULT_PASSWORD` - pgAdmin web interface password
+
+#### Frontend Configuration
+- `VITE_API_URL` - API endpoint URL for frontend
+
+#### SSL Configuration (Production)
+- `SSL_CERT_PATH` - Path to SSL certificate file
+- `SSL_KEY_PATH` - Path to SSL private key file
+
+### 🚀 Development Workflow with Secrets
+
+#### Development Setup
+```bash
+# 1. Clone and setup
+git clone <repository>
+cd <project>
+
+# 2. Decrypt secrets
+./scripts/secrets-manage.sh reveal
+
+# 3. Start development environment
+./dev-workflow.sh start-dev
+# or
+docker-compose -f docker-compose.app.dev.yml --env-file .env.development up -d
+```
+
+#### Production Deployment
+```bash
+# 1. Decrypt secrets
+./scripts/secrets-manage.sh reveal
+
+# 2. Update production secrets (CRITICAL!)
+./scripts/secrets-manage.sh edit .env.production
+# Change all passwords to strong, unique values
+
+# 3. Deploy
+docker-compose -f docker-compose.app.yml --env-file .env.production up -d
+
+# 4. Clean up decrypted files on server
+rm .env.production .env.development
+```
+
+#### Making Changes to Secrets
+```bash
+# 1. Decrypt secrets
+./scripts/secrets-manage.sh reveal
+
+# 2. Edit the files
+nano .env.production  # or use your preferred editor
+
+# 3. Encrypt and commit
+./scripts/secrets-manage.sh hide
+git add .env.production.secret
+git commit -m "Update production database password"
+git push
+```
+
+### 🆘 Troubleshooting Secrets
+
+#### Cannot decrypt secrets
+```bash
+# Check if you're authorized
+git secret whoknows
+
+# Check your GPG keys
+gpg --list-secret-keys
+
+# Re-add your key if needed
+git secret tell your-email@example.com
+```
+
+#### Missing encrypted files
+```bash
+# Check which files should be encrypted
+git secret list
+
+# Re-encrypt if needed
+git secret hide --force
+```
+
+#### Secrets out of sync
+```bash
+# Check for changes
+git secret changes
+
+# Re-encrypt all files
+./scripts/secrets-manage.sh hide --force
+```
+
+#### GPG key issues
+```bash
+# Test GPG functionality
+echo "test" | gpg --encrypt -r your-email@example.com | gpg --decrypt
+
+# Import missing keys
+gpg --import < public-key.asc
+```
+
+For complete secret management documentation, see [SECRET_MANAGEMENT.md](./SECRET_MANAGEMENT.md).
+
 ## Frontend Development
 
 ### 1. Initialize React TypeScript Project with Vite
@@ -258,6 +507,7 @@ export default defineConfig({
 // frontend/src/services/api.ts
 import axios, { AxiosResponse } from 'axios';
 
+// API URL from environment (managed by git-secret)
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const apiClient = axios.create({
@@ -367,14 +617,15 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(basedir, '.env'))
 
 class Config:
+    # Secrets managed by git-secret - loaded from environment files
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key'
     
-    # Database configuration
+    # Database configuration from encrypted environment
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
         'postgresql://user:password@localhost:5432/dbname'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # JWT configuration
+    # JWT configuration from encrypted environment
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-string'
     JWT_ACCESS_TOKEN_EXPIRES = 3600  # 1 hour
     
@@ -794,6 +1045,37 @@ This project includes comprehensive management scripts that simplify development
 
 ### Management Scripts
 
+#### Secret Management
+```bash
+# Decrypt secrets for development
+./scripts/secrets-manage.sh reveal
+
+# Encrypt secrets before committing
+./scripts/secrets-manage.sh hide
+
+# Edit production secrets safely
+./scripts/secrets-manage.sh edit .env.production
+
+# Check secret status
+./scripts/secrets-manage.sh status
+```
+
+#### Development Workflow
+```bash
+# Complete development setup (includes secret management)
+./dev-workflow.sh setup-dev       # Setup and decrypt secrets
+./dev-workflow.sh start-dev       # Start development services
+./dev-workflow.sh stop-dev        # Stop development services
+
+# Production workflow
+./dev-workflow.sh setup-prod      # Setup and prompt for secret review
+./dev-workflow.sh start-prod      # Start production services
+./dev-workflow.sh stop-prod       # Stop production services
+
+# Cleanup
+./dev-workflow.sh clean           # Clean containers and secrets
+```
+
 #### PostgreSQL Management
 ```bash
 # Start/stop PostgreSQL container
@@ -840,25 +1122,34 @@ This project includes comprehensive management scripts that simplify development
 git clone <repository-url>
 cd project-root
 
-# Copy environment variables
-cp .env.example .env
+# Setup secrets (required for database connection)
+./scripts/secrets-manage.sh reveal
 
-# Option 1: Using management scripts (recommended)
+# Option 1: Using integrated workflow scripts (recommended)
+./dev-workflow.sh setup-dev     # Builds frontend and decrypts secrets
+./dev-workflow.sh start-dev     # Starts all services with proper environment
+
+# Option 2: Using management scripts separately
 # Start PostgreSQL
 ./scripts/postgres-manage.sh start
 
 # Start the combined application
 ./scripts/app-manage.sh start dev
 
-# Option 2: Run components separately for development
+# Option 3: Run components separately for development
 # Terminal 1: Start PostgreSQL
 docker compose -f docker-compose.postgres.yml up -d
 
 # Terminal 2: Frontend development server
 cd frontend && npm run dev
 
-# Terminal 3: Backend development server
-cd backend && python run.py
+# Terminal 3: Backend development server (with secrets loaded)
+export $(cat .env.development | xargs) && cd backend && python run.py
+```
+
+**Important**: Always decrypt secrets before starting development:
+```bash
+./scripts/secrets-manage.sh reveal
 ```
 
 ### 2. Development Docker Compose
@@ -872,6 +1163,8 @@ services:
     extends:
       file: docker-compose.postgres.yml
       service: postgres
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # From decrypted .env.development
     
   app:
     build:
@@ -885,10 +1178,12 @@ services:
       - ./backend:/app/backend
       - ./frontend/dist:/var/www/html
     environment:
+      # All values loaded from .env.development (decrypted by git-secret)
       - FLASK_ENV=development
-      - DATABASE_URL=postgresql://myapp_user:myapp_password@postgres:5432/myapp_db
-      - SECRET_KEY=dev-secret-key
-      - JWT_SECRET_KEY=dev-jwt-secret
+      - FLASK_DEBUG=1
+      - DATABASE_URL=${DATABASE_URL}
+      - SECRET_KEY=${SECRET_KEY}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     depends_on:
       postgres:
         condition: service_healthy
@@ -900,20 +1195,45 @@ networks:
     driver: bridge
 ```
 
+**Usage with secrets**:
+```bash
+# Decrypt secrets first
+./scripts/secrets-manage.sh reveal
+
+# Start with environment file
+docker-compose -f docker-compose.app.dev.yml --env-file .env.development up -d
+
+# Or use the workflow script (handles secrets automatically)
+./dev-workflow.sh start-dev
+```
+
 ### 3. Production Build Commands
 
 ```bash
+# Decrypt secrets for production build
+./scripts/secrets-manage.sh reveal
+
+# Review and update production secrets (CRITICAL!)
+./scripts/secrets-manage.sh edit .env.production
+
 # Build frontend first
 cd frontend && npm run build && cd ..
 
 # Build application image
 docker build -f docker/Dockerfile.app -t learn-practice-master-app:latest .
 
-# Run production containers using management script
+# Run production containers using workflow script (recommended)
+./dev-workflow.sh start-prod
+
+# Or run with management script
 ./scripts/app-manage.sh start
 
-# Or with docker-compose
-docker compose -f docker-compose.app.yml up -d --build
+# Or with docker-compose directly
+docker compose -f docker-compose.app.yml --env-file .env.production up -d --build
+
+# Clean up decrypted secrets after deployment
+./scripts/secrets-manage.sh hide
+rm .env.production .env.development  # On production server only
 ```
 
 ## Production Deployment
@@ -929,6 +1249,8 @@ services:
     extends:
       file: docker-compose.postgres.yml
       service: postgres
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # From encrypted .env.production
     
   app:
     build:
@@ -938,8 +1260,9 @@ services:
     ports:
       - "80:80"
     environment:
+      # All sensitive values from encrypted environment file
       - FLASK_ENV=production
-      - DATABASE_URL=postgresql://myapp_user:myapp_password@postgres:5432/myapp_db
+      - DATABASE_URL=${DATABASE_URL}
       - SECRET_KEY=${SECRET_KEY}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
     depends_on:
@@ -959,25 +1282,50 @@ networks:
     driver: bridge
 ```
 
+**Deployment with secrets**:
+```bash
+# Decrypt production secrets
+./scripts/secrets-manage.sh reveal
+
+# Start production services
+docker-compose -f docker-compose.app.yml --env-file .env.production up -d
+
+# Or use workflow script
+./dev-workflow.sh start-prod
+```
+
 ### 2. Environment Variables
 
 ```bash
-# .env.example
+# .env.example - Safe template (no real secrets)
 # Database
-DATABASE_URL=postgresql://myapp_user:myapp_password@localhost:5432/myapp_db
+DATABASE_URL=postgresql://username:password@host:port/database
+POSTGRES_PASSWORD=your-secure-database-password
 
-# Flask
-SECRET_KEY=your-secret-key-here
-FLASK_ENV=production
-JWT_SECRET_KEY=your-jwt-secret-here
+# Flask Security (use strong, unique values!)
+SECRET_KEY=your-very-long-random-secret-key-here
+JWT_SECRET_KEY=your-very-long-random-jwt-secret-here
+
+# Admin Tools
+PGADMIN_DEFAULT_EMAIL=admin@yourdomain.com
+PGADMIN_DEFAULT_PASSWORD=your-secure-pgadmin-password
 
 # Frontend
-VITE_API_URL=http://localhost/api
+VITE_API_URL=https://yourdomain.com/api
 
 # SSL (for production)
 SSL_CERT_PATH=/etc/ssl/certs/cert.pem
 SSL_KEY_PATH=/etc/ssl/certs/key.pem
 ```
+
+**Real environment files** (managed by git-secret):
+- `.env.development` - Development secrets (encrypted as `.env.development.secret`)
+- `.env.production` - Production secrets (encrypted as `.env.production.secret`)
+
+**Important**: 
+- Never put real secrets in `.env.example`
+- Use `./scripts/secrets-manage.sh edit .env.production` to update production secrets
+- Always use strong, unique passwords for production
 
 ### 3. Deployment Script
 
@@ -992,13 +1340,26 @@ echo "Starting deployment..."
 # Pull latest code
 git pull origin main
 
+# Decrypt secrets for deployment
+./scripts/secrets-manage.sh reveal
+
+# Prompt to review production secrets
+echo "⚠️  IMPORTANT: Review production secrets before deployment!"
+read -p "Have you reviewed and updated production secrets? (y/N): " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Please update production secrets first:"
+    echo "  ./scripts/secrets-manage.sh edit .env.production"
+    exit 1
+fi
+
 # Build frontend
 cd frontend && npm run build && cd ..
 
-# Build and deploy
-./scripts/app-manage.sh stop
-./scripts/app-manage.sh rebuild
-./scripts/app-manage.sh start
+# Build and deploy using workflow script
+./dev-workflow.sh stop-prod
+./dev-workflow.sh setup-prod
+./dev-workflow.sh start-prod
 
 # Wait for services to be ready
 echo "Waiting for services to start..."
@@ -1006,19 +1367,27 @@ sleep 30
 
 # Health check
 if curl -f http://localhost/health; then
-    echo "Deployment successful!"
+    echo "✅ Deployment successful!"
 else
-    echo "Deployment failed - rolling back"
-    ./scripts/app-manage.sh stop
-    ./scripts/app-manage.sh start
+    echo "❌ Deployment failed - rolling back"
+    ./dev-workflow.sh stop-prod
+    # Restore previous version here if needed
     exit 1
 fi
 
-# Cleanup old images
+# Cleanup
+./scripts/secrets-manage.sh hide  # Re-encrypt secrets
+rm -f .env.production .env.development  # Remove decrypted files
 docker system prune -f
 
-echo "Deployment completed successfully!"
+echo "🎉 Deployment completed successfully!"
 ```
+
+**Security Notes**:
+- Script automatically handles secret decryption/encryption
+- Prompts for production secret review
+- Cleans up decrypted files after deployment
+- Includes rollback mechanism for failed deployments
 
 ## Testing Strategy
 
@@ -1115,7 +1484,28 @@ python -m pytest backend/tests/
 
 ### Common Issues and Solutions
 
-#### 1. Database Connection Issues
+#### 1. Secret Management Issues
+
+```bash
+# Cannot decrypt secrets
+./scripts/secrets-manage.sh status  # Check authorization
+git secret whoknows                 # List authorized users
+gpg --list-secret-keys             # Verify GPG keys
+
+# Missing environment files
+./scripts/secrets-manage.sh reveal  # Decrypt secrets
+git secret list                     # Check tracked files
+
+# Secrets out of sync
+git secret changes                  # Check for changes
+./scripts/secrets-manage.sh hide --force  # Force re-encryption
+
+# GPG key issues
+gpg --full-generate-key            # Generate new key
+git secret tell your-email@domain.com  # Add yourself to secrets
+```
+
+#### 2. Database Connection Issues
 
 ```bash
 # Check PostgreSQL container status
@@ -1145,10 +1535,12 @@ npm run type-check
 npm run build -- --debug
 ```
 
-#### 3. Backend API Issues
+#### 4. Backend API Issues
 
 ```python
-# Enable Flask debug mode
+# Enable Flask debug mode (ensure secrets are decrypted first)
+./scripts/secrets-manage.sh reveal
+export $(cat .env.development | xargs)
 export FLASK_ENV=development
 export FLASK_DEBUG=1
 
@@ -1158,6 +1550,9 @@ export FLASK_DEBUG=1
 # Test API endpoints
 curl -X GET http://localhost/api/health
 curl -X GET http://localhost:5000/api/health
+
+# Check environment variables in container
+docker exec -it learn-practice-master-app-1 env | grep -E "(DATABASE_URL|SECRET_KEY)"
 ```
 
 #### 4. Docker Build Issues
@@ -1298,22 +1693,41 @@ networks:
 
 ### Conclusion
 
-This comprehensive guide provides a solid foundation for developing a modern full-stack application using React TypeScript, Flask, PostgreSQL, with separate containerized services. The architecture is scalable, maintainable, and production-ready.
+This comprehensive guide provides a solid foundation for developing a modern full-stack application using React TypeScript, Flask, PostgreSQL, with separate containerized services and enterprise-grade secret management.
 
 Key benefits of this setup:
 - **Separated Services**: Database and application in separate containers for better scaling
 - **Modern Stack**: Latest versions of React, TypeScript, and Flask
 - **Type Safety**: Full TypeScript support for better development experience
+- **Security**: Built-in security best practices with git-secret encryption
+- **Secret Management**: Enterprise-grade encrypted secret storage with GPG
 - **Performance**: Optimized builds with Vite and proper caching strategies
-- **Security**: Built-in security best practices
 - **Monitoring**: Easy to add monitoring and logging solutions
 - **Scalability**: Architecture supports independent scaling of database and application
 - **Management**: Comprehensive management scripts for easy operations
+- **Team Collaboration**: Secure secret sharing with team member access control
 
 The project includes:
 - **Containerized PostgreSQL** with complete schema, functions, and sample data
 - **Combined application container** with React frontend and Flask backend
-- **Management scripts** for easy development and deployment
+- **Encrypted secret management** using git-secret and GPG keys
+- **Management scripts** for secrets, development, and deployment workflows
 - **Development and production configurations** for different environments
+- **Integrated workflow scripts** for seamless development experience
 
-Remember to customize the configuration based on your specific requirements and always follow security best practices for production deployments.
+**Security Features**:
+- All sensitive data encrypted with git-secret
+- Environment-specific secret management
+- No secrets stored in plain text in repository
+- Team-based access control with GPG keys
+- Automated secret handling in deployment workflows
+
+Remember to:
+1. **Always decrypt secrets** before development: `./scripts/secrets-manage.sh reveal`
+2. **Update production secrets** before deployment: `./scripts/secrets-manage.sh edit .env.production`
+3. **Encrypt secrets before committing**: `./scripts/secrets-manage.sh hide`
+4. **Use strong, unique passwords** for production environments
+5. **Backup your GPG private key** securely
+6. **Follow security best practices** for production deployments
+
+For detailed secret management documentation, see [SECRET_MANAGEMENT.md](./SECRET_MANAGEMENT.md)
